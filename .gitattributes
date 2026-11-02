@@ -1,0 +1,11 @@
+# 统一换行符，避免 Windows 下的批处理/文本被转坏
+* text=auto
+
+# 批处理必须 CRLF，否则 if() 多行块在 cmd 里会解析出错
+*.bat text eol=crlf
+*.txt text eol=crlf
+
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.yml text eol=lf

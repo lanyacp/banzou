@@ -1,0 +1,18 @@
+--extra-index-url https://mirror.sjtu.edu.cn/pytorch-wheels/cpu/
+torch==2.9.1+cpu
+torchaudio==2.9.1+cpu
+demucs==4.1.0
+openunmix
+julius
+treetable
+omegaconf
+dora-search
+einops
+tqdm
+pyyaml
+soundfile>=0.12
+lameenc>=1.7
+safetensors
+sphn>=0.1.12
+huggingface-hub
+tkinterdnd2>=0.4
