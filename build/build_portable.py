@@ -126,7 +126,7 @@ def step_ffmpeg():
 def step_assemble():
     log("5/6 组装程序文件")
     os.makedirs(os.path.join(PKG, "app"), exist_ok=True)
-    for f in ("main.py", "separate.py"):
+    for f in ("main.py", "separate.py", "icon.ico"):
         shutil.copy2(os.path.join(ROOT, "app", f), os.path.join(PKG, "app", f))
     for f in ("一键伴奏.bat", "使用说明.txt"):
         shutil.copy2(os.path.join(ROOT, f), os.path.join(PKG, f))

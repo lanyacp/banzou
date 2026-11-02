@@ -19,6 +19,9 @@ dist/
 error.log
 *.log
 
+# 本机设置（运行时生成，含用户自己的路径）
+app/settings.json
+
 # 系统
 .DS_Store
 Thumbs.db
