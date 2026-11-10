@@ -76,6 +76,17 @@ def short_path(p, limit=36):
     return p[:head] + "..." + p[-tail:]
 
 
+def decode_line(raw):
+    """引擎/系统输出可能是 UTF-8 或 GBK；先严格试 UTF-8，失败再退 GBK。
+    不能直接用 errors='replace'，那会把中文变成一串菱形问号。"""
+    for enc in ("utf-8", "gbk", "mbcs"):
+        try:
+            return raw.decode(enc)
+        except (UnicodeDecodeError, LookupError):
+            continue
+    return raw.decode("utf-8", "replace")
+
+
 # ---------- 圆角按钮 ----------
 class RoundButton(tk.Canvas):
     """Canvas 画的圆角按钮（原生 Button 只能是方角）"""
@@ -338,24 +349,35 @@ class App:
         flags = 0
         if os.name == "nt":
             flags = subprocess.CREATE_NO_WINDOW
+        # 让子进程的 stdout 固定为 UTF-8，避免中文版 Windows 用 GBK 输出报错
+        env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
         try:
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                    cwd=ROOT, creationflags=flags, bufsize=0)
+                                    cwd=ROOT, creationflags=flags, bufsize=0, env=env)
         except Exception as e:
             self.q.put(("error", "无法启动处理程序：%s" % e))
             return
+        got_done = False
+        got_error = False
         for raw in iter(proc.stdout.readline, b""):
-            line = raw.decode("utf-8", "replace").strip()
+            line = decode_line(raw).strip()
             if line.startswith("PROGRESS"):
                 try:
                     self.q.put(("p", int(line.split()[1])))
                 except Exception:
                     pass
             elif line.startswith("DONE"):
+                got_done = True
                 self.q.put(("done", outdir))
             elif line.startswith("ERROR"):
+                got_error = True
                 self.q.put(("error", line[6:].strip()))
         proc.wait()
+        # 引擎被杀软拦下 / Python 直接崩溃时，一句协议都不会输出，
+        # 否则窗口会永远停在「分离中…」
+        if not got_done and not got_error:
+            self.q.put(("error", "处理程序意外退出（退出码 %s），没有输出结果。"
+                                 "详情见 app\\error.log" % proc.returncode))
 
     def poll(self):
         try:
@@ -395,12 +417,16 @@ class App:
             except Exception:
                 pass
         else:
+            msg = str(info)
             self.status.configure(text="出错了", fg="#C0504D")
             self.d_title.configure(text="处理失败")
-            self.d_sub.configure(text=str(info)[:40])
+            self.d_sub.configure(text=msg[:40])
             self.btn.set_text("重试")
             self.btn.set_enabled(True)
-            messagebox.showerror("处理失败", str(info))
+            log_path = os.path.join(HERE, "error.log")
+            tip = ("\n\n详细原因已写入：\n%s\n\n"
+                   "把这个文件发回给作者，就能定位问题。" % log_path)
+            messagebox.showerror("处理失败", msg + tip)
 
 
 def main():
